@@ -214,7 +214,11 @@ def wait_current_chat_name(wx: Any, variant: str, timeout_seconds: float = 2.0) 
 
 def resolve_target_chat_name(wx: Any, variant: str, who: str) -> str:
     target = (who or "").strip()
-    sessions = list_sessions(wx, variant)
+    try:
+        sessions = list_sessions(wx, variant)
+    except Exception as exc:
+        print(f"[compat] failed to enumerate sessions, fallback to direct search: {exc}")
+        return target
     if not sessions:
         return target
 
@@ -279,17 +283,6 @@ def choose_search_result(results: List[Any], query: str) -> Optional[Any]:
 def open_chat(wx: Any, variant: str, who: str) -> str:
     switch_to_chat_page(wx)
 
-    sessions = wx.GetSession() if variant == "wxauto4" else []
-    if sessions:
-        for session in sessions:
-            name = str(getattr(session, "name", None) or getattr(session, "who", None) or "").strip()
-            if name == who:
-                try:
-                    session.click()
-                    return name
-                except Exception:
-                    break
-
     if variant == "wxauto4":
         try:
             results = wx.SessionBox.search(who) or []
@@ -300,6 +293,20 @@ def open_chat(wx: Any, variant: str, who: str) -> str:
             content = str(getattr(target, "content", "") or who).strip()
             target.click()
             return content or who
+
+        try:
+            sessions = wx.GetSession() or []
+        except Exception as exc:
+            print(f"[compat] failed to enumerate sessions, continue with ChatWith fallback: {exc}")
+            sessions = []
+        for session in sessions:
+            name = str(getattr(session, "name", None) or getattr(session, "who", None) or "").strip()
+            if name == who:
+                try:
+                    session.click()
+                    return name
+                except Exception:
+                    break
 
     last_error: Optional[Exception] = None
     attempts = [
