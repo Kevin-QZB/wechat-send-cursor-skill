@@ -309,20 +309,14 @@ def open_chat(wx: Any, variant: str, who: str) -> str:
             results = wx.SessionBox.search(who) or []
         except Exception:
             results = []
+        time.sleep(0.2)
         target = choose_search_result(list(results), who)
         if target is not None:
             content = str(getattr(target, "content", "") or who).strip()
-            switched = False
             try:
-                switch_by_search = getattr(wx.SessionBox, "_switch_chat_by_search", None)
-                if callable(switch_by_search):
-                    switch_by_search(content or who, exact=True, force=True, force_wait=0.8)
-                    switched = True
-            except Exception:
-                switched = False
-
-            if not switched:
                 target.click()
+            except Exception as exc:
+                raise WeChatSendError(f"点击搜索结果失败：{exc}") from exc
             time.sleep(0.4)
             actual_chat = wait_current_chat_name(wx, variant, 2.0)
             if actual_chat and not (
@@ -340,7 +334,7 @@ def open_chat(wx: Any, variant: str, who: str) -> str:
             sessions = []
         for session in sessions:
             name = str(getattr(session, "name", None) or getattr(session, "who", None) or "").strip()
-            if name == who:
+            if chat_name_matches(name, who):
                 try:
                     session.click()
                     time.sleep(0.4)
@@ -560,26 +554,25 @@ def main() -> int:
 
     opened_chat = ""
     last_open_error: Optional[Exception] = None
-    for retry_index in range(3):
-        try:
-            opened_candidate = open_chat(wx, variant, resolved_who)
-        except Exception as exc:
-            last_open_error = exc
-            continue
-
+    try:
+        opened_candidate = open_chat(wx, variant, resolved_who)
+    except Exception as exc:
+        last_open_error = exc
+    else:
         actual_chat = wait_current_chat_name(wx, variant, 2.0)
+        if actual_chat and not (
+            chat_name_matches(actual_chat, opened_candidate) or chat_name_matches(actual_chat, resolved_who)
+        ):
+            time.sleep(0.2)
+            actual_chat = wait_current_chat_name(wx, variant, 1.0) or actual_chat
         if actual_chat and not (
             chat_name_matches(actual_chat, opened_candidate) or chat_name_matches(actual_chat, resolved_who)
         ):
             last_open_error = WeChatSendError(
                 f"已打开的对话框不是目标会话，期望「{resolved_who}」，实际「{actual_chat}」"
             )
-            print(f"[retry] 第 {retry_index + 1} 次切换后仍停留在「{actual_chat}」，继续重试")
-            time.sleep(0.5)
-            continue
-
-        opened_chat = actual_chat or opened_candidate
-        break
+        else:
+            opened_chat = actual_chat or opened_candidate
 
     if not opened_chat:
         available = list_sessions(wx, variant)
