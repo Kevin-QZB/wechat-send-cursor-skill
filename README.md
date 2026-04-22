@@ -15,7 +15,7 @@
 2. 或者把整个 `.cursor/skills/send-wechat-message/` 目录复制到你的 Cursor 项目中，然后直接对代理说：
 
 - `打开微信给张三发你好`
-- `给九安 梁辉煌发今晚八点开会`
+- `给某联系人发收到请回复`
 
 如果你是第一次安装到自己的 Cursor 项目，建议直接看 [`INSTALL.md`](INSTALL.md)。
 

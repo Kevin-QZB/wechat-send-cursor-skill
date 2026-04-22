@@ -5,7 +5,7 @@
 优先直接使用已经打好的可执行文件：
 
 ```powershell
-".cursor/skills/send-wechat-message/dist/wechat-message-sender.exe" --who "张三" --message "今晚八点开会"
+".cursor/skills/send-wechat-message/dist/wechat-message-sender.exe" --who "张三" --message "你好"
 ```
 
 查看当前微信可见会话：
@@ -25,7 +25,7 @@
 仅当 exe 不存在或失效时，才回退到脚本：
 
 ```powershell
-python ".cursor/skills/send-wechat-message/scripts/send_wechat_message.py" --who "张三" --message "今晚八点开会"
+python ".cursor/skills/send-wechat-message/scripts/send_wechat_message.py" --who "张三" --message "你好"
 ```
 
 ## 维护者打包
@@ -45,7 +45,7 @@ powershell -ExecutionPolicy Bypass -File ".cursor/skills/send-wechat-message/bui
 默认主程序路径：
 
 ```powershell
-".cursor/skills/send-wechat-message/dist/wechat-message-sender.exe" --who "张三" --message "今晚八点开会"
+".cursor/skills/send-wechat-message/dist/wechat-message-sender.exe" --who "张三" --message "你好"
 ```
 
 如果维护者更想保留 `onedir` 目录模式，可选：
@@ -57,7 +57,7 @@ powershell -ExecutionPolicy Bypass -File ".cursor/skills/send-wechat-message/bui
 `onedir` 模式下主程序通常是：
 
 ```powershell
-".cursor/skills/send-wechat-message/dist/wechat-message-sender/wechat-message-sender.exe" --who "张三" --message "今晚八点开会"
+".cursor/skills/send-wechat-message/dist/wechat-message-sender/wechat-message-sender.exe" --who "张三" --message "你好"
 ```
 
 ## 故障排查
