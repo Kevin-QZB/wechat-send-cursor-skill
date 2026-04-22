@@ -212,6 +212,14 @@ def wait_current_chat_name(wx: Any, variant: str, timeout_seconds: float = 2.0) 
     return ""
 
 
+def chat_name_matches(actual: str, expected: str) -> bool:
+    actual_name = (actual or "").strip()
+    expected_name = (expected or "").strip()
+    if not actual_name or not expected_name:
+        return False
+    return normalize_name(actual_name) == normalize_name(expected_name)
+
+
 def resolve_target_chat_name(wx: Any, variant: str, who: str) -> str:
     target = (who or "").strip()
     try:
@@ -304,8 +312,26 @@ def open_chat(wx: Any, variant: str, who: str) -> str:
         target = choose_search_result(list(results), who)
         if target is not None:
             content = str(getattr(target, "content", "") or who).strip()
-            target.click()
-            return content or who
+            switched = False
+            try:
+                switch_by_search = getattr(wx.SessionBox, "_switch_chat_by_search", None)
+                if callable(switch_by_search):
+                    switch_by_search(content or who, exact=True, force=True, force_wait=0.8)
+                    switched = True
+            except Exception:
+                switched = False
+
+            if not switched:
+                target.click()
+            time.sleep(0.4)
+            actual_chat = wait_current_chat_name(wx, variant, 2.0)
+            if actual_chat and not (
+                chat_name_matches(actual_chat, content) or chat_name_matches(actual_chat, who)
+            ):
+                raise WeChatSendError(
+                    f"点击搜索结果后仍停留在其他会话，目标「{content or who}」，实际「{actual_chat}」"
+                )
+            return actual_chat or content or who
 
         try:
             sessions = wx.GetSession() or []
@@ -317,7 +343,13 @@ def open_chat(wx: Any, variant: str, who: str) -> str:
             if name == who:
                 try:
                     session.click()
-                    return name
+                    time.sleep(0.4)
+                    actual_chat = wait_current_chat_name(wx, variant, 2.0)
+                    if actual_chat and not chat_name_matches(actual_chat, name):
+                        raise WeChatSendError(
+                            f"点击会话列表后仍停留在其他会话，目标「{name}」，实际「{actual_chat}」"
+                        )
+                    return actual_chat or name
                 except Exception:
                     break
 
@@ -339,11 +371,25 @@ def open_chat(wx: Any, variant: str, who: str) -> str:
     for attempt in attempts:
         try:
             attempt()
-            return who
+            time.sleep(0.4)
+            actual_chat = wait_current_chat_name(wx, variant, 2.5)
+            if actual_chat and not chat_name_matches(actual_chat, who):
+                last_error = WeChatSendError(
+                    f"切换会话后仍停留在其他会话，目标「{who}」，实际「{actual_chat}」"
+                )
+                continue
+            return actual_chat or who
         except TypeError:
             try:
                 wx.ChatWith(who)
-                return who
+                time.sleep(0.4)
+                actual_chat = wait_current_chat_name(wx, variant, 2.5)
+                if actual_chat and not chat_name_matches(actual_chat, who):
+                    last_error = WeChatSendError(
+                        f"切换会话后仍停留在其他会话，目标「{who}」，实际「{actual_chat}」"
+                    )
+                    continue
+                return actual_chat or who
             except Exception as exc:
                 last_error = exc
         except Exception as exc:
@@ -512,21 +558,38 @@ def main() -> int:
     if resolved_who != who:
         print(f"[match] 输入名称「{who}」已模糊匹配到会话「{resolved_who}」")
 
-    try:
-        opened_candidate = open_chat(wx, variant, resolved_who)
-    except Exception as exc:
+    opened_chat = ""
+    last_open_error: Optional[Exception] = None
+    for retry_index in range(3):
+        try:
+            opened_candidate = open_chat(wx, variant, resolved_who)
+        except Exception as exc:
+            last_open_error = exc
+            continue
+
+        actual_chat = wait_current_chat_name(wx, variant, 2.0)
+        if actual_chat and not (
+            chat_name_matches(actual_chat, opened_candidate) or chat_name_matches(actual_chat, resolved_who)
+        ):
+            last_open_error = WeChatSendError(
+                f"已打开的对话框不是目标会话，期望「{resolved_who}」，实际「{actual_chat}」"
+            )
+            print(f"[retry] 第 {retry_index + 1} 次切换后仍停留在「{actual_chat}」，继续重试")
+            time.sleep(0.5)
+            continue
+
+        opened_chat = actual_chat or opened_candidate
+        break
+
+    if not opened_chat:
         available = list_sessions(wx, variant)
-        hint = [f"未能切换到会话「{resolved_who}」: {exc}"]
+        hint = [f"未能切换到会话「{resolved_who}」: {last_open_error}"]
         if available:
             preview = "、".join(available[:20])
             hint.append(f"当前可见会话前 20 个: {preview}")
         hint.append("请确认会话名与微信里显示的一致，并且该会话已出现在最近会话列表。")
-        raise WeChatSendError("\n".join(hint)) from exc
+        raise WeChatSendError("\n".join(hint))
 
-    actual_chat = wait_current_chat_name(wx, variant, 2.0)
-    if actual_chat and actual_chat != opened_candidate and normalize_name(actual_chat) != normalize_name(opened_candidate):
-        raise WeChatSendError(f"已打开的对话框不是目标会话，期望「{opened_candidate}」，实际「{actual_chat}」")
-    opened_chat = actual_chat or opened_candidate
     if opened_chat != resolved_who:
         print(f"[match] 实际打开的会话为「{opened_chat}」")
 
