@@ -5,13 +5,13 @@
 优先直接使用已经打好的可执行文件：
 
 ```powershell
-".cursor/skills/send-wechat-message/dist/wechat-message-sender/wechat-message-sender.exe" --who "张三" --message "今晚八点开会"
+".cursor/skills/send-wechat-message/dist/wechat-message-sender.exe" --who "张三" --message "今晚八点开会"
 ```
 
 查看当前微信可见会话：
 
 ```powershell
-".cursor/skills/send-wechat-message/dist/wechat-message-sender/wechat-message-sender.exe" --list-sessions
+".cursor/skills/send-wechat-message/dist/wechat-message-sender.exe" --list-sessions
 ```
 
 ## 当前版本能力
@@ -30,7 +30,7 @@ python ".cursor/skills/send-wechat-message/scripts/send_wechat_message.py" --who
 
 ## 维护者打包
 
-默认生成免 Python 环境的可执行产物，推荐用 `onedir` 目录模式，稳定性更高：
+默认生成免 Python 环境的单文件离线 `exe`，以减少最终分发文件数量：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File ".cursor/skills/send-wechat-message/build_wechat_sender.ps1" -Clean
@@ -42,22 +42,22 @@ powershell -ExecutionPolicy Bypass -File ".cursor/skills/send-wechat-message/bui
 .cursor/skills/send-wechat-message/dist/
 ```
 
-如果确实想压成单文件 exe，可选：
-
-```powershell
-powershell -ExecutionPolicy Bypass -File ".cursor/skills/send-wechat-message/build_wechat_sender.ps1" -OneFile -Clean
-```
-
-打包后主程序路径：
-
-```powershell
-".cursor/skills/send-wechat-message/dist/wechat-message-sender/wechat-message-sender.exe" --who "张三" --message "今晚八点开会"
-```
-
-单文件模式则通常是：
+默认主程序路径：
 
 ```powershell
 ".cursor/skills/send-wechat-message/dist/wechat-message-sender.exe" --who "张三" --message "今晚八点开会"
+```
+
+如果维护者更想保留 `onedir` 目录模式，可选：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File ".cursor/skills/send-wechat-message/build_wechat_sender.ps1" -OneDir -Clean
+```
+
+`onedir` 模式下主程序通常是：
+
+```powershell
+".cursor/skills/send-wechat-message/dist/wechat-message-sender/wechat-message-sender.exe" --who "张三" --message "今晚八点开会"
 ```
 
 ## 故障排查
@@ -113,7 +113,7 @@ pip install git+https://github.com/cluic/wxauto.git
 
 旧版本曾出现“消息实际已发送，但读取不到自己发出的绿气泡”的问题。当前版本已经改为读取聊天区原始 UI 气泡做成功校验。
 
-如果仍遇到类似情况，请优先更新到仓库内最新的 `dist/wechat-message-sender/` 目录或 `dist/wechat-message-sender.zip`。
+如果仍遇到类似情况，请优先更新到仓库内最新的 `dist/wechat-message-sender.exe`。
 
 ### 5. 微信没启动
 

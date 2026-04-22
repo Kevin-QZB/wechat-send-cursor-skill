@@ -1,3 +1,0 @@
-[console_scripts]
-wxauto4=wxauto4.__main__:main
-

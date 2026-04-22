@@ -29,13 +29,13 @@
 进入你项目根目录后，可以直接运行：
 
 ```powershell
-.cursor\skills\send-wechat-message\dist\wechat-message-sender\wechat-message-sender.exe --who "张三" --message "你好"
+.cursor\skills\send-wechat-message\dist\wechat-message-sender.exe --who "张三" --message "你好"
 ```
 
 查看当前微信可见会话：
 
 ```powershell
-.cursor\skills\send-wechat-message\dist\wechat-message-sender\wechat-message-sender.exe --list-sessions
+.cursor\skills\send-wechat-message\dist\wechat-message-sender.exe --list-sessions
 ```
 
 ## 当前版本已经处理的常见问题
@@ -65,4 +65,10 @@
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File ".cursor/skills/send-wechat-message/build_wechat_sender.ps1" -Clean
+```
+
+如果你更想保留 `onedir` 目录模式，可选：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File ".cursor/skills/send-wechat-message/build_wechat_sender.ps1" -OneDir -Clean
 ```

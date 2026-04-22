@@ -22,7 +22,7 @@ description: 通过桌面微信给指定联系人或群聊发送消息。Use whe
 3. 默认直接使用已经打好的可执行文件：
 
 ```powershell
-".cursor/skills/send-wechat-message/dist/wechat-message-sender/wechat-message-sender.exe" --who "<联系人或群名>" --message "<消息内容>"
+".cursor/skills/send-wechat-message/dist/wechat-message-sender.exe" --who "<联系人或群名>" --message "<消息内容>"
 ```
 
 4. 只有在可执行文件不存在或失效时，才回退到 Python 脚本：
@@ -36,7 +36,7 @@ python ".cursor/skills/send-wechat-message/scripts/send_wechat_message.py" --who
 6. 如果用户只是想确认会话名，先列出当前微信可见会话：
 
 ```powershell
-".cursor/skills/send-wechat-message/dist/wechat-message-sender/wechat-message-sender.exe" --list-sessions
+".cursor/skills/send-wechat-message/dist/wechat-message-sender.exe" --list-sessions
 ```
 
 7. 如果 exe 不存在，再回退到脚本方式：
@@ -84,4 +84,5 @@ powershell -ExecutionPolicy Bypass -File ".cursor/skills/send-wechat-message/bui
 
 - 当前实现会优先点击左侧可见会话或搜索结果，而不是只依赖 `wxauto4.ChatWith()`。
 - 当前实现的发送成功校验基于聊天区原始 UI 气泡，而不是只依赖 `wxauto4.GetAllMessage()`，以适配微信 4.x 下“自己发出的消息被漏读”的情况。
+- 仓库默认分发单文件离线 `exe`，以减少最终用户需要复制和保留的文件数量。
 - 更详细的排障说明见 [reference.md](reference.md)。

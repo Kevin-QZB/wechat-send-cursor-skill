@@ -2,14 +2,14 @@
 
 这是一个可直接分发的 Cursor Skill，用于在 Windows 桌面微信中给联系人或群聊发送消息。
 
-仓库里已经包含可直接使用的分发产物，普通用户不需要安装 Python，也不需要自己重新打包。
+仓库里已经包含可直接使用的分发产物，普通用户不需要安装 Python，也不需要自己重新打包。当前默认分发为单文件离线 `exe`，更方便复制、转发和归档。
 
 ## 最方便的使用方式
 
 1. 直接使用已打包好的可执行文件：
 
 ```powershell
-.cursor\skills\send-wechat-message\dist\wechat-message-sender\wechat-message-sender.exe --who "张三" --message "你好"
+.cursor\skills\send-wechat-message\dist\wechat-message-sender.exe --who "张三" --message "你好"
 ```
 
 2. 或者把整个 `.cursor/skills/send-wechat-message/` 目录复制到你的 Cursor 项目中，然后直接对代理说：
@@ -30,8 +30,7 @@
 
 - `.cursor/skills/send-wechat-message/SKILL.md`：Skill 入口说明。
 - `.cursor/skills/send-wechat-message/reference.md`：维护和排障文档。
-- `.cursor/skills/send-wechat-message/dist/wechat-message-sender/`：开箱即用的 onedir 分发目录。
-- `.cursor/skills/send-wechat-message/dist/wechat-message-sender.zip`：便于直接分发的压缩包。
+- `.cursor/skills/send-wechat-message/dist/wechat-message-sender.exe`：默认分发的单文件离线可执行程序。
 
 ## 重新打包
 
@@ -39,4 +38,10 @@
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File ".cursor/skills/send-wechat-message/build_wechat_sender.ps1" -Clean
+```
+
+如果维护者想改回 `onedir` 目录模式，可选：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File ".cursor/skills/send-wechat-message/build_wechat_sender.ps1" -OneDir -Clean
 ```

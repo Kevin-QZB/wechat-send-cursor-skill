@@ -9,3 +9,6 @@ wxauto_logs/
 .cursor/skills/send-wechat-message/vendor/*.whl
 .cursor/skills/send-wechat-message/vendor/*.exe
 .cursor/skills/send-wechat-message/vendor/*.nupkg
+wechat-message-sender.spec
+.cursor/skills/send-wechat-message/dist/wechat-message-sender/
+.cursor/skills/send-wechat-message/dist/wechat-message-sender.zip

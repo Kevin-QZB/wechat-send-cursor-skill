@@ -2,6 +2,7 @@ WeChat Message Sender
 
 This package is ready to use.
 The end user does NOT need to install Python or build anything.
+The default release now uses a single offline exe to keep the file count low.
 
 How to use:
 

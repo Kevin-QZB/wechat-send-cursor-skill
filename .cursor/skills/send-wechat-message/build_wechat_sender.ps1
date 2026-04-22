@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [switch]$OneFile,
+    [switch]$OneDir,
     [switch]$Clean,
     [string]$Python = "python"
 )
@@ -148,7 +148,7 @@ function Run-Build {
 
     Write-Step "Run PyInstaller build"
 
-    if ($OneFile) {
+    if (-not $OneDir) {
         $args = @(
             "-m", "PyInstaller",
             "--noconfirm",
@@ -158,6 +158,7 @@ function Run-Build {
             "--hidden-import", "pythoncom",
             "--hidden-import", "pywintypes",
             "--hidden-import", "win32timezone",
+            "--specpath", $BuildDir,
             "--distpath", $DistDir,
             "--workpath", $BuildDir
         )
