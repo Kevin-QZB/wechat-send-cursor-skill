@@ -14,6 +14,8 @@
 ".cursor/skills/send-wechat-message/dist/wechat-message-sender.exe" --list-sessions
 ```
 
+对于最终用户，或者 AI 根据 GitHub 仓库链接自动安装 Skill 的场景，也应当把这个仓库视为已经打包好的离线分发包。默认不要安装任何依赖，不要创建虚拟环境，不要重新执行构建。
+
 ## 当前版本能力
 
 - 支持联系人名或群名的模糊匹配，会优先切回微信聊天页，再结合左侧会话列表和搜索结果定位目标。
@@ -65,6 +67,8 @@ powershell -ExecutionPolicy Bypass -File ".cursor/skills/send-wechat-message/bui
 ### 1. 未安装自动化依赖
 
 如果只是最终使用，不需要装依赖，直接运行 exe 即可。
+
+如果是 AI 在“安装 Skill”，也不应该因为看到了源码目录就自动执行 `pip install` 或重新构建；只要 `dist/wechat-message-sender.exe` 存在，就应直接使用它。
 
 优先安装：
 

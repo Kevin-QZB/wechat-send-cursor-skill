@@ -25,27 +25,29 @@ description: 通过桌面微信给指定联系人或群聊发送消息。Use whe
 ".cursor/skills/send-wechat-message/dist/wechat-message-sender.exe" --who "<联系人或群名>" --message "<消息内容>"
 ```
 
-4. 只有在可执行文件不存在或失效时，才回退到 Python 脚本：
+4. 这是一份已经打包好的离线 Skill。无论是用户手动复制安装，还是 AI 根据 GitHub 仓库链接自动安装，都不要为了“安装技能”去创建虚拟环境、安装依赖或重新打包。
+
+5. 只有在可执行文件不存在或失效时，才回退到 Python 脚本：
 
 ```powershell
 python ".cursor/skills/send-wechat-message/scripts/send_wechat_message.py" --who "<联系人或群名>" --message "<消息内容>"
 ```
 
-5. 如果用户提供的是简称、备注的一部分，或你怀疑会话名不完整，也可以直接执行发送命令。当前版本会先切回微信聊天页，再结合左侧会话列表和搜索结果做模糊匹配。
+6. 如果用户提供的是简称、备注的一部分，或你怀疑会话名不完整，也可以直接执行发送命令。当前版本会先切回微信聊天页，再结合左侧会话列表和搜索结果做模糊匹配。
 
-6. 如果用户只是想确认会话名，先列出当前微信可见会话：
+7. 如果用户只是想确认会话名，先列出当前微信可见会话：
 
 ```powershell
 ".cursor/skills/send-wechat-message/dist/wechat-message-sender.exe" --list-sessions
 ```
 
-7. 如果 exe 不存在，再回退到脚本方式：
+8. 如果 exe 不存在，再回退到脚本方式：
 
 ```powershell
 python ".cursor/skills/send-wechat-message/scripts/send_wechat_message.py" --list-sessions
 ```
 
-8. 只有在确认已打开目标对话、并在聊天区检测到新消息气泡后，才算发送成功。成功后明确反馈已向谁发送了什么。
+9. 只有在确认已打开目标对话、并在聊天区检测到新消息气泡后，才算发送成功。成功后明确反馈已向谁发送了什么。
 
 ## 执行约束
 
@@ -53,10 +55,11 @@ python ".cursor/skills/send-wechat-message/scripts/send_wechat_message.py" --lis
 - 优先让用户提供尽可能准确的联系人备注名或群名。当前版本支持模糊匹配，但如果多个候选都很像，仍应优先向用户确认。
 - 保持消息内容原样，不要擅自润色，除非用户明确要求你改写。
 - 优先使用 `wxauto4` 适配微信 4.x；仅在用户明确是老版微信 3.9.x 或 `wxauto4` 不适用时再考虑 `wxauto`。
+- 如果 `dist/wechat-message-sender.exe` 存在，就把这个 Skill 视为“已完成离线安装”，不要触发任何依赖安装动作。
 
 ## 常见故障处理
 
-- 如果 exe 可用，不要让最终用户安装 Python 或自行打包。
+- 如果 exe 可用，不要让最终用户安装 Python、创建虚拟环境或自行打包。
 
 - 仅在维护这个 Skill、需要重新构建时，才处理依赖安装问题。
 
