@@ -1,0 +1,11 @@
+.cursor/skills/send-wechat-message/.build-venv/
+.cursor/skills/send-wechat-message/.nuget-python311/
+.cursor/skills/send-wechat-message/build/
+.cursor/skills/send-wechat-message/scripts/__pycache__/
+.cursor/skills/send-wechat-message/__pycache__/
+**/__pycache__/
+*.pyc
+wxauto_logs/
+.cursor/skills/send-wechat-message/vendor/*.whl
+.cursor/skills/send-wechat-message/vendor/*.exe
+.cursor/skills/send-wechat-message/vendor/*.nupkg
