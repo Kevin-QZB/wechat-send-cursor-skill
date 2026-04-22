@@ -274,10 +274,23 @@ def choose_search_result(results: List[Any], query: str) -> Optional[Any]:
             continue
         filtered.append((score_name_match(query, content), item, content))
 
+    exact_matches = [row for row in filtered if normalize_name(row[2]) == normalize_name(query)]
+    if exact_matches:
+        return exact_matches[0][1]
+
     filtered.sort(key=lambda row: row[0], reverse=True)
-    if filtered and filtered[0][0] >= 0.45:
+    if filtered and filtered[0][0] >= 0.6:
         return filtered[0][1]
     return None
+
+
+def search_result_contents(results: List[Any]) -> List[str]:
+    contents: List[str] = []
+    for item in results:
+        content = str(getattr(item, "content", "") or "").strip()
+        if content:
+            contents.append(content)
+    return contents
 
 
 def open_chat(wx: Any, variant: str, who: str) -> str:
@@ -297,7 +310,7 @@ def open_chat(wx: Any, variant: str, who: str) -> str:
         try:
             sessions = wx.GetSession() or []
         except Exception as exc:
-            print(f"[compat] failed to enumerate sessions, continue with ChatWith fallback: {exc}")
+            print(f"[compat] failed to enumerate sessions, skip session click fallback: {exc}")
             sessions = []
         for session in sessions:
             name = str(getattr(session, "name", None) or getattr(session, "who", None) or "").strip()
@@ -307,6 +320,13 @@ def open_chat(wx: Any, variant: str, who: str) -> str:
                     return name
                 except Exception:
                     break
+
+        preview = "、".join(search_result_contents(list(results))[:10])
+        hint = [f"未能通过微信搜索定位到会话「{who}」。"]
+        if preview:
+            hint.append(f"当前搜索结果前 10 项: {preview}")
+        hint.append("请确认联系人或群聊名称是否正确，或先在微信里手动打开一次该会话后再重试。")
+        raise WeChatSendError("\n".join(hint))
 
     last_error: Optional[Exception] = None
     attempts = [
