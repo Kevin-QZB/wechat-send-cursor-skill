@@ -1,6 +1,6 @@
 # WeChat Send Skill
 
-这是一个可直接分发的 Cursor Skill，用于在 Windows 桌面微信中给联系人或群聊发送消息。
+这是一个可直接分发的 Cursor Skill，用于在 Windows 桌面微信中给联系人或群聊发送消息，也支持发送文档、图片、音频等通用文件。
 
 仓库里已经包含可直接使用的分发产物，普通用户不需要安装 Python，也不需要自己重新打包。当前默认分发为单文件离线 `exe`，更方便复制、转发和归档。
 
@@ -12,6 +12,12 @@
 
 ```powershell
 .cursor\skills\send-wechat-message\dist\wechat-message-sender.exe --who "张三" --message "你好"
+```
+
+发送文件：
+
+```powershell
+.cursor\skills\send-wechat-message\dist\wechat-message-sender.exe --who "张三" --file "C:\path\to\report.docx"
 ```
 
 2. 或者把整个 `.cursor/skills/send-wechat-message/` 目录复制到你的 Cursor 项目中，然后直接对代理说：
@@ -35,8 +41,10 @@
 
 - 支持联系人名和群名的模糊匹配。
 - 会先切回微信聊天页，再优先点击左侧会话或搜索结果打开目标对话。
+- 支持发送文档、图片、音频等通用文件。
 - 已规避 `wxauto4` 初始化时弹出个人资料卡的问题。
 - 发送成功会按目标对话中的原始聊天气泡做校验，不再误判“已发送”为失败。
+- 当前版本暂不支持稳定发送“微信语音条/按住说话录音气泡”；音频文件可按文件发送。
 
 ## 仓库内容
 

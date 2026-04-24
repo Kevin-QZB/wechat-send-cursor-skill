@@ -8,6 +8,12 @@
 ".cursor/skills/send-wechat-message/dist/wechat-message-sender.exe" --who "张三" --message "你好"
 ```
 
+发送文件：
+
+```powershell
+".cursor/skills/send-wechat-message/dist/wechat-message-sender.exe" --who "张三" --file "C:\path\to\report.docx"
+```
+
 查看当前微信可见会话：
 
 ```powershell
@@ -19,8 +25,10 @@
 ## 当前版本能力
 
 - 支持联系人名或群名的模糊匹配，会优先切回微信聊天页，再结合左侧会话列表和搜索结果定位目标。
+- 支持发送文档、图片、音频等通用文件，默认走 `wxauto4.SendFiles(...)`。
 - 会尽量避免 `wxauto4` 初始化时弹出个人资料卡。
 - 发送成功校验基于目标对话中的原始聊天气泡，而不是只依赖 `wxauto4.GetAllMessage()`，以兼容微信 4.x 下“自己发出的消息被漏读”的情况。
+- 当前版本未发现稳定的“微信语音条/按住说话”自动化入口；现成音频文件应按文件发送。
 
 ## 回退脚本命令
 
@@ -118,6 +126,8 @@ pip install git+https://github.com/cluic/wxauto.git
 旧版本曾出现“消息实际已发送，但读取不到自己发出的绿气泡”的问题。当前版本已经改为读取聊天区原始 UI 气泡做成功校验。
 
 如果仍遇到类似情况，请优先更新到仓库内最新的 `dist/wechat-message-sender.exe`。
+
+对于文件发送，图片消息通常在聊天区显示为 `图片`，普通文件通常显示为带文件名的文件卡片；当前版本已经分别做了兼容校验。
 
 ### 5. 微信没启动
 

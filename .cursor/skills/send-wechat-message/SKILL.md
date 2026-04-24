@@ -19,10 +19,16 @@ description: 通过桌面微信给指定联系人或群聊发送消息。Use whe
    - `who`: 联系人名或群聊名
    - `message`: 要发送的原始消息内容
 2. 如果联系人或消息内容不明确，先追问，不要猜。
-3. 默认直接使用已经打好的可执行文件：
+3. 默认直接使用已经打好的可执行文件发送文本：
 
 ```powershell
 ".cursor/skills/send-wechat-message/dist/wechat-message-sender.exe" --who "<联系人或群名>" --message "<消息内容>"
+```
+
+如需发送文件，改用：
+
+```powershell
+".cursor/skills/send-wechat-message/dist/wechat-message-sender.exe" --who "<联系人或群名>" --file "<文件绝对路径>"
 ```
 
 4. 这是一份已经打包好的离线 Skill。无论是用户手动复制安装，还是 AI 根据 GitHub 仓库链接自动安装，都不要为了“安装技能”去创建虚拟环境、安装依赖或重新打包。
@@ -54,8 +60,10 @@ python ".cursor/skills/send-wechat-message/scripts/send_wechat_message.py" --lis
 - 仅适用于 Windows 桌面微信。
 - 优先让用户提供尽可能准确的联系人备注名或群名。当前版本支持模糊匹配，但如果多个候选都很像，仍应优先向用户确认。
 - 保持消息内容原样，不要擅自润色，除非用户明确要求你改写。
+- 发送文件时优先提供绝对路径；当前版本支持文档、图片、音频等通用文件。
 - 优先使用 `wxauto4` 适配微信 4.x；仅在用户明确是老版微信 3.9.x 或 `wxauto4` 不适用时再考虑 `wxauto`。
 - 如果 `dist/wechat-message-sender.exe` 存在，就把这个 Skill 视为“已完成离线安装”，不要触发任何依赖安装动作。
+- 当前版本暂不支持稳定发送真正的微信语音条/按住说话录音气泡；如果用户要发送现成音频文件，应按文件发送而不是当作语音条处理。
 
 ## 常见故障处理
 
@@ -87,5 +95,6 @@ powershell -ExecutionPolicy Bypass -File ".cursor/skills/send-wechat-message/bui
 
 - 当前实现会优先点击左侧可见会话或搜索结果，而不是只依赖 `wxauto4.ChatWith()`。
 - 当前实现的发送成功校验基于聊天区原始 UI 气泡，而不是只依赖 `wxauto4.GetAllMessage()`，以适配微信 4.x 下“自己发出的消息被漏读”的情况。
+- 当前实现支持 `--file` 发送通用文件；图片消息会按图片气泡做校验，普通文件会按文件卡片做校验。
 - 仓库默认分发单文件离线 `exe`，以减少最终用户需要复制和保留的文件数量。
 - 更详细的排障说明见 [reference.md](reference.md)。

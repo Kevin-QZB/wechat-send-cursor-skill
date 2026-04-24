@@ -45,6 +45,12 @@
 .cursor\skills\send-wechat-message\dist\wechat-message-sender.exe --who "张三" --message "你好"
 ```
 
+发送文件：
+
+```powershell
+.cursor\skills\send-wechat-message\dist\wechat-message-sender.exe --who "张三" --file "C:\path\to\photo.png"
+```
+
 查看当前微信可见会话：
 
 ```powershell
@@ -55,8 +61,10 @@
 
 - 支持联系人名和群名的模糊匹配。
 - 会自动切回微信聊天页，再优先点击左侧会话或搜索结果。
+- 支持发送文档、图片、音频等通用文件。
 - 已规避初始化时弹出微信资料卡的问题。
 - 发送成功会根据聊天区里的原始消息气泡做确认，不会再把“实际已发出”误判成失败。
+- 当前版本暂不支持稳定发送真正的微信语音条；如果是 `.mp3` / `.wav` / `.m4a` 等现成音频文件，可按文件发送。
 
 ## 如果发送失败
 

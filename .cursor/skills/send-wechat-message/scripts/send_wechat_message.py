@@ -13,6 +13,9 @@ class WeChatSendError(RuntimeError):
     pass
 
 
+IMAGE_FILE_SUFFIXES = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp"}
+
+
 def patch_wxauto4_profile_popup(module: Any) -> None:
     """Short-circuit wxauto4 get_my_info to avoid opening profile card."""
     if getattr(module, "__name__", "") not in {"wxauto4", "wxautox4"}:
@@ -305,6 +308,7 @@ def open_chat(wx: Any, variant: str, who: str) -> str:
     switch_to_chat_page(wx)
 
     if variant == "wxauto4":
+        click_error: Optional[Exception] = None
         try:
             results = wx.SessionBox.search(who) or []
         except Exception:
@@ -316,16 +320,17 @@ def open_chat(wx: Any, variant: str, who: str) -> str:
             try:
                 target.click()
             except Exception as exc:
-                raise WeChatSendError(f"点击搜索结果失败：{exc}") from exc
-            time.sleep(0.4)
-            actual_chat = wait_current_chat_name(wx, variant, 2.0)
-            if actual_chat and not (
-                chat_name_matches(actual_chat, content) or chat_name_matches(actual_chat, who)
-            ):
-                raise WeChatSendError(
-                    f"点击搜索结果后仍停留在其他会话，目标「{content or who}」，实际「{actual_chat}」"
-                )
-            return actual_chat or content or who
+                click_error = exc
+            else:
+                time.sleep(0.4)
+                actual_chat = wait_current_chat_name(wx, variant, 2.0)
+                if actual_chat and not (
+                    chat_name_matches(actual_chat, content) or chat_name_matches(actual_chat, who)
+                ):
+                    raise WeChatSendError(
+                        f"点击搜索结果后仍停留在其他会话，目标「{content or who}」，实际「{actual_chat}」"
+                    )
+                return actual_chat or content or who
 
         try:
             sessions = wx.GetSession() or []
@@ -347,8 +352,20 @@ def open_chat(wx: Any, variant: str, who: str) -> str:
                 except Exception:
                     break
 
+        if click_error is not None:
+            try:
+                wx.ChatWith(who, exact=True)
+                time.sleep(0.4)
+                actual_chat = wait_current_chat_name(wx, variant, 2.0)
+                if actual_chat and chat_name_matches(actual_chat, who):
+                    return actual_chat
+            except Exception:
+                pass
+
         preview = "、".join(search_result_contents(list(results))[:10])
         hint = [f"未能通过微信搜索定位到会话「{who}」。"]
+        if click_error is not None:
+            hint.append(f"搜索结果点击失败：{click_error}")
         if preview:
             hint.append(f"当前搜索结果前 10 项: {preview}")
         hint.append("请确认联系人或群聊名称是否正确，或先在微信里手动打开一次该会话后再重试。")
@@ -515,14 +532,150 @@ def send_message(wx: Any, who: str, message: str, variant: str) -> None:
         raise WeChatSendError(f"消息发送失败: {last_error}")
 
 
-def parse_args() -> argparse.Namespace:
+def normalize_file_paths(file_args: Optional[List[str]]) -> List[str]:
+    result: List[str] = []
+    seen: set[str] = set()
+
+    for raw in file_args or []:
+        value = str(raw or "").strip()
+        if not value:
+            continue
+        path = Path(value).expanduser()
+        if not path.is_absolute():
+            path = (Path.cwd() / path).resolve()
+        else:
+            path = path.resolve()
+        if not path.exists():
+            raise WeChatSendError(f"文件不存在：{path}")
+        if path.is_dir():
+            raise WeChatSendError(f"暂不支持发送目录：{path}")
+        normalized = str(path)
+        if normalized in seen:
+            continue
+        seen.add(normalized)
+        result.append(normalized)
+
+    return result
+
+
+def resolve_send_payload(message: Optional[str], file_args: Optional[List[str]]) -> Tuple[str, List[str]]:
+    normalized_message = message if message is not None else ""
+    file_paths = normalize_file_paths(file_args)
+    if bool(normalized_message) == bool(file_paths):
+        raise WeChatSendError("必须且只能提供一种发送内容：--message 或 --file。")
+    return normalized_message, file_paths
+
+
+def collect_file_labels(file_paths: List[str]) -> List[str]:
+    labels: List[str] = []
+    for item in file_paths:
+        name = Path(item).name.strip()
+        if name:
+            labels.append(name)
+    return labels
+
+
+def collect_file_marker_groups(file_paths: List[str]) -> List[List[str]]:
+    groups: List[List[str]] = []
+    for item in file_paths:
+        markers = [Path(item).name.strip()]
+        if Path(item).suffix.lower() in IMAGE_FILE_SUFFIXES:
+            markers.append("图片")
+        groups.append([marker for marker in markers if marker])
+    return groups
+
+
+def raw_item_contains_text(items: List[tuple[str, str]], text: str) -> bool:
+    wanted = (text or "").strip()
+    if not wanted:
+        return False
+    for _class_name, content in items:
+        if wanted in (content or ""):
+            return True
+    return False
+
+
+def message_list_contains_text(messages: List[Any], text: str) -> bool:
+    wanted = (text or "").strip()
+    if not wanted:
+        return False
+    for raw in messages:
+        if wanted in message_content(raw):
+            return True
+    return False
+
+
+def verify_files_sent(
+    wx: Any,
+    variant: str,
+    who: str,
+    file_paths: List[str],
+    before: List[Any],
+    before_raw_items: List[tuple[str, str]],
+) -> None:
+    marker_groups = collect_file_marker_groups(file_paths)
+    deadline = time.time() + 10.0
+
+    while time.time() < deadline:
+        current_chat = current_chat_name(wx, variant)
+        if current_chat and current_chat != who:
+            time.sleep(0.3)
+            continue
+
+        after_messages = get_messages_in_current_chat(wx)
+        after_raw_items = get_raw_message_items(wx)
+        if marker_groups and all(
+            any(
+                message_list_contains_text(after_messages, marker) or raw_item_contains_text(after_raw_items, marker)
+                for marker in marker_group
+            )
+            for marker_group in marker_groups
+        ):
+            return
+
+        # Some clients surface file cards later or without stable text extraction.
+        if len(after_raw_items) > len(before_raw_items):
+            return
+
+        time.sleep(0.3)
+
+    summary = "、".join(collect_file_labels(file_paths)) if file_paths else "文件"
+    raise WeChatSendError(f"发送后未在对话框「{who}」中检测到文件内容：{summary}")
+
+
+def send_files(wx: Any, who: str, file_paths: List[str], variant: str) -> None:
+    before = get_messages_in_current_chat(wx)
+    before_raw_items = get_raw_message_items(wx)
+    attempts = [
+        lambda: wx.SendFiles(file_paths if len(file_paths) > 1 else file_paths[0]),
+        lambda: wx.SendFiles(file_paths if len(file_paths) > 1 else file_paths[0], who=who, exact=True),
+        lambda: wx.SendFiles(file_paths if len(file_paths) > 1 else file_paths[0], who=who),
+    ]
+
+    last_error: Optional[Exception] = None
+    for attempt in attempts:
+        try:
+            response = attempt()
+            if response is not None and hasattr(response, "is_success") and not bool(response):
+                raise WeChatSendError(str(response))
+            verify_files_sent(wx, variant, who, file_paths, before, before_raw_items)
+            return
+        except Exception as exc:
+            last_error = exc
+
+    if last_error is not None:
+        raise WeChatSendError(f"文件发送失败: {last_error}")
+
+
+def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="通过桌面微信给指定联系人或群聊发消息")
     parser.add_argument("--who", help="联系人名或群聊名")
     parser.add_argument("--message", help="要发送的消息内容")
+    parser.add_argument("--file", action="append", dest="files", help="要发送的文件路径，可重复指定")
     parser.add_argument("--list-sessions", action="store_true", help="列出当前微信可见会话")
     parser.add_argument("--timeout", type=int, default=15, help="连接微信超时时间，默认 15 秒")
     parser.add_argument("--dry-run", action="store_true", help="只切到会话，不实际发送")
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
 def main() -> int:
@@ -542,11 +695,9 @@ def main() -> int:
         return 0
 
     who = (args.who or "").strip()
-    message = args.message if args.message is not None else ""
+    message, file_paths = resolve_send_payload(args.message, args.files)
     if not who:
         raise WeChatSendError("缺少 --who 参数。")
-    if not message:
-        raise WeChatSendError("缺少 --message 参数，或消息内容为空。")
 
     resolved_who = resolve_target_chat_name(wx, variant, who)
     if resolved_who != who:
@@ -589,7 +740,15 @@ def main() -> int:
     time.sleep(0.3)
 
     if args.dry_run:
-        print(f"[dry-run] 已切到「{opened_chat}」，待发送内容: {message}")
+        if file_paths:
+            print(f"[dry-run] 已切到「{opened_chat}」，待发送文件: {'、'.join(collect_file_labels(file_paths))}")
+        else:
+            print(f"[dry-run] 已切到「{opened_chat}」，待发送内容: {message}")
+        return 0
+
+    if file_paths:
+        send_files(wx, opened_chat, file_paths, variant)
+        print(f"已通过 {variant} 向「{opened_chat}」发送文件: {'、'.join(collect_file_labels(file_paths))}")
         return 0
 
     send_message(wx, opened_chat, message, variant)
